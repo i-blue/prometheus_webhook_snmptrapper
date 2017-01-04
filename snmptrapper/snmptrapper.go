@@ -9,7 +9,6 @@ import (
 	types "github.com/chrusty/prometheus_webhook_snmptrapper/types"
 
 	logrus "github.com/Sirupsen/logrus"
-	snmpgo "github.com/k-sone/snmpgo"
 )
 
 var (
@@ -23,15 +22,15 @@ func init() {
 	logrus.SetLevel(logrus.DebugLevel)
 
 	// Configure which OIDs to use for the SNMP Traps:
-	trapOIDs.FiringTrap, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.0.1")
-	trapOIDs.RecoveryTrap, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.0.2")
-	trapOIDs.Instance, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.1.1")
-	trapOIDs.Service, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.1.2")
-	trapOIDs.Location, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.1.3")
-	trapOIDs.Severity, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.1.4")
-	trapOIDs.Description, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.1.5")
-	trapOIDs.JobName, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.1.6")
-	trapOIDs.TimeStamp, _ = snmpgo.NewOid("1.3.6.1.3.1977.1.1.7")
+	trapOIDs = types.TrapOIDs{
+		TrapOID:      ".1.3.6.1.4.1.56.12.1.7",
+		Component:    ".1.3.6.1.4.1.56.12.9.1.0",
+		SubComponent: ".1.3.6.1.4.1.56.12.9.2.0",
+		Severity:     ".1.3.6.1.4.1.56.12.9.3.0",
+		Message:      ".1.3.6.1.4.1.56.12.9.4.0",
+		Summary:      ".1.3.6.1.4.1.56.12.9.5.0",
+		Namespace:    ".1.3.6.1.4.1.56.12.9.6.0",
+	}
 }
 
 func Run(myConfigFromMain config.Config, alertsChannel chan types.Alert, waitGroup *sync.WaitGroup) {
