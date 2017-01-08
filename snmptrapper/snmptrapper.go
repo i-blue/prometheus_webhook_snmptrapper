@@ -1,73 +1,123 @@
 package snmptrapper
 
 import (
-	"os"
-	"os/signal"
-	"sync"
+	"bytes"
+	"fmt"
+	"os/exec"
 
-	config "github.com/chrusty/prometheus_webhook_snmptrapper/config"
-	types "github.com/chrusty/prometheus_webhook_snmptrapper/types"
+	types "github.com/dannyk81/prometheus_webhook_snmptrapper/types"
 
 	logrus "github.com/Sirupsen/logrus"
 )
 
-var (
-	log      = logrus.WithFields(logrus.Fields{"logger": "SNMP-trapper"})
-	myConfig config.Config
-	trapOIDs types.TrapOIDs
-)
+func sendTrap(alert types.Alert) {
+	var genericTrap string = "6"
+	var specificTrap string = "1"
 
-func init() {
-	// Set the log-level:
-	logrus.SetLevel(logrus.DebugLevel)
-
-	// Configure which OIDs to use for the SNMP Traps:
-	trapOIDs = types.TrapOIDs{
-		TrapOID:      ".1.3.6.1.4.1.56.12.1.7",
-		Component:    ".1.3.6.1.4.1.56.12.9.1.0",
-		SubComponent: ".1.3.6.1.4.1.56.12.9.2.0",
-		Severity:     ".1.3.6.1.4.1.56.12.9.3.0",
-		Message:      ".1.3.6.1.4.1.56.12.9.4.0",
-		Summary:      ".1.3.6.1.4.1.56.12.9.5.0",
-		Namespace:    ".1.3.6.1.4.1.56.12.9.6.0",
-	}
-}
-
-func Run(myConfigFromMain config.Config, alertsChannel chan types.Alert, waitGroup *sync.WaitGroup) {
-
-	log.WithFields(logrus.Fields{"address": myConfigFromMain.SNMPTrapAddress}).Info("Starting the SNMP trapper")
-
-	// Populate the config:
-	myConfig = myConfigFromMain
-
-	// Set up a channel to handle shutdown:
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Kill, os.Interrupt)
-
-	// Handle incoming alerts:
-	go func() {
-		for {
-			select {
-
-			case alert := <-alertsChannel:
-
-				// Send a trap based on this alert:
-				log.WithFields(logrus.Fields{"status": alert.Status}).Debug("Received an alert")
-				sendTrap(alert)
-			}
-		}
-	}()
-
-	// Wait for shutdown:
-	for {
-		select {
-		case <-signals:
-			log.Warn("Shutting down the SNMP trapper")
-
-			// Tell main() that we're done:
-			waitGroup.Done()
-			return
-		}
+	// Figure out which "severity" value to send:
+	switch {
+	case alert.Status == "resolved":
+		// "Any existing alerts with a matching Node, AlertGroup, AlertKey will be cleared":
+		specificTrap = "0"
+	case alert.Labels["severity"] == "info", alert.Labels["severity"] == "warning":
+		// "The alert may provide useful information when attempting to determine the root cause of an issue":
+		specificTrap = "2"
+	case alert.Labels["severity"] == "minor":
+		// "specificTrapThe alert represents a low priority issue that can be resolved during normal working hours":
+		specificTrap = "3"
+	case alert.Labels["severity"] == "major":
+		// "An issue has occurred that is resilience affecting and requires immediate investigation":
+		specificTrap = "4"
+	case alert.Labels["severity"] == "critical":
+		// "An issue has occurred that is service affecting and requires immediate investigation":
+		specificTrap = "5"
+	default:
+		// "The severity of this alert is yet to be determined":
+		specificTrap = "1"
 	}
 
+	// Prepare to send the TRAP using Net-SNMP's "snmptrap" command (because I can't find a library capable of sending V1 traps in GoLang):
+	var stdout, stderr bytes.Buffer
+	var arguments = make(map[string]string)
+	arguments["snmpTrapVersion"] = "-v1"
+	arguments["snmpCommunity"] = fmt.Sprintf("-c %v", myConfig.SNMPCommunity)
+	arguments["snmpTrapdAddress"] = myConfig.SNMPTrapAddress
+	arguments["snmpTrapdOID"] = trapOIDs.TrapOID
+	arguments["agentAddress"] = "127.0.0.1" // alert.Address
+	arguments["genericTrap"] = genericTrap
+	arguments["specificTrap"] = specificTrap
+	arguments["uptime"] = "0"
+	arguments["oidComponent"] = trapOIDs.Component
+	arguments["oidComponentType"] = "s"
+	arguments["oidComponentValue"] = fmt.Sprintf("'%v'", alert.Labels["instance"])
+	arguments["oidSubComponent"] = trapOIDs.SubComponent
+	arguments["oidSubComponentType"] = "s"
+	arguments["oidSubComponentValue"] = fmt.Sprintf("'%v'", alert.Labels["service"])
+	arguments["oidSeverity"] = trapOIDs.Severity
+	arguments["oidSeverityType"] = "s"
+	arguments["oidSeverityValue"] = fmt.Sprintf("'%v'", alert.Labels["severity"])        
+	arguments["oidMessage"] = trapOIDs.Message
+	arguments["oidMessageType"] = "s"
+	arguments["oidMessageValue"] = fmt.Sprintf("'%v'", alert.Annotations["description"])
+	arguments["oidSummary"] = trapOIDs.Summary
+	arguments["oidSummaryType"] = "s"
+	arguments["oidSummaryValue"] = fmt.Sprintf("'%v'", alert.Annotations["summary"])
+	arguments["oidNamespace"] = trapOIDs.Namespace
+	arguments["oidNamespaceType"] = "s"
+	arguments["oidNamespaceValue"] = fmt.Sprintf("'%v'", alert.Labels["kubernetes_namespace"])
+	arguments["oidApplication"] = trapOIDs.Application
+	arguments["oidApplicationType"] = "s"
+	arguments["oidApplicationValue"] = fmt.Sprintf("'%v'", alert.Labels["alert_application"])
+	arguments["oidObject"] = trapOIDs.Object
+	arguments["oidObjectType"] = "s"
+	arguments["oidObjectValue"] = fmt.Sprintf("'%v'", alert.Labels["alert_object"])	
+
+	// Trap command:
+	netSNMPTrapCommand := exec.Command(
+		myConfig.SNMPTrapBinary,
+		arguments["snmpTrapVersion"],
+		arguments["snmpCommunity"],
+		arguments["snmpTrapdAddress"],
+		arguments["snmpTrapdOID"],
+		arguments["agentAddress"],
+		arguments["genericTrap"],
+		arguments["specificTrap"],
+		arguments["uptime"],
+		arguments["oidComponent"],
+		arguments["oidComponentType"],
+		arguments["oidComponentValue"],
+		arguments["oidSubComponent"],
+		arguments["oidSubComponentType"],
+		arguments["oidSubComponentValue"],
+		arguments["oidSeverity"],
+		arguments["oidSeverityType"],
+		arguments["oidSeverityValue"],
+		arguments["oidMessage"],
+		arguments["oidMessageType"],
+		arguments["oidMessageValue"],
+		arguments["oidSummary"],
+		arguments["oidSummaryType"],
+		arguments["oidSummaryValue"],
+		arguments["oidNamespace"],
+		arguments["oidNamespaceType"],
+		arguments["oidNamespaceValue"],
+		arguments["oidApplication"],
+		arguments["oidApplicationType"],
+		arguments["oidApplicationValue"],
+		arguments["oidObject"],
+		arguments["oidObjectType"],
+		arguments["oidObjectValue"],		
+
+	)
+	netSNMPTrapCommand.Stdout = &stdout
+	netSNMPTrapCommand.Stderr = &stderr
+
+	// Send the trap:
+	err := netSNMPTrapCommand.Run()
+	if err != nil {
+		log.WithFields(logrus.Fields{"error": err, "stdout": stdout.String(), "stderr": stderr.String(), "command": netSNMPTrapCommand.Path, "args": netSNMPTrapCommand.Args}).Error("Failed to send SNMP trap")
+		return
+	} else {
+		log.WithFields(logrus.Fields{"status": alert.Status, "specific_trap": specificTrap, "generic_trap": genericTrap, "severity": alert.Labels["severity"], "stdout": stdout.String(), "stderr": stderr.String(), "command": netSNMPTrapCommand.Path, "args": netSNMPTrapCommand.Args}).Info("It's a trap!")
+	}
 }
