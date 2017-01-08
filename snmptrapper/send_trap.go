@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	types "github.com/chrusty/prometheus_webhook_snmptrapper/types"
+	types "github.com/dannyk81/prometheus_webhook_snmptrapper/types"
 
 	logrus "github.com/Sirupsen/logrus"
 )
@@ -61,10 +61,16 @@ func sendTrap(alert types.Alert) {
 	arguments["oidMessageValue"] = fmt.Sprintf("'%v'", alert.Annotations["description"])
 	arguments["oidSummary"] = trapOIDs.Summary
 	arguments["oidSummaryType"] = "s"
-	arguments["oidSummaryValue"] = fmt.Sprintf("'%v'", alert.Labels["summary"])
+	arguments["oidSummaryValue"] = fmt.Sprintf("'%v'", alert.Annotations["summary"])
 	arguments["oidNamespace"] = trapOIDs.Namespace
 	arguments["oidNamespaceType"] = "s"
 	arguments["oidNamespaceValue"] = fmt.Sprintf("'%v'", alert.Labels["kubernetes_namespace"])
+	arguments["oidApplication"] = trapOIDs.Application
+	arguments["oidApplicationType"] = "s"
+	arguments["oidApplicationValue"] = fmt.Sprintf("'%v'", alert.Labels["alert_application"])
+	arguments["oidObject"] = trapOIDs.Object
+	arguments["oidObjectType"] = "s"
+	arguments["oidObjectValue"] = fmt.Sprintf("'%v'", alert.Labels["alert_object"])	
 
 	// Trap command:
 	netSNMPTrapCommand := exec.Command(
@@ -95,6 +101,12 @@ func sendTrap(alert types.Alert) {
 		arguments["oidNamespace"],
 		arguments["oidNamespaceType"],
 		arguments["oidNamespaceValue"],
+		arguments["oidApplication"],
+		arguments["oidApplicationType"],
+		arguments["oidApplicationValue"],
+		arguments["oidObject"],
+		arguments["oidObjectType"],
+		arguments["oidObjectValue"],		
 
 	)
 	netSNMPTrapCommand.Stdout = &stdout
@@ -106,6 +118,6 @@ func sendTrap(alert types.Alert) {
 		log.WithFields(logrus.Fields{"error": err, "stdout": stdout.String(), "stderr": stderr.String(), "command": netSNMPTrapCommand.Path, "args": netSNMPTrapCommand.Args}).Error("Failed to send SNMP trap")
 		return
 	} else {
-		log.WithFields(logrus.Fields{"status": alert.Status, "specific_trap": specificTrap, "generic_trap": genericTrap, "severity": alert.Labels["severity"]}).Info("It's a trap!")
+		log.WithFields(logrus.Fields{"status": alert.Status, "specific_trap": specificTrap, "generic_trap": genericTrap, "severity": alert.Labels["severity"], "stdout": stdout.String(), "stderr": stderr.String(), "command": netSNMPTrapCommand.Path, "args": netSNMPTrapCommand.Args}).Info("It's a trap!")
 	}
 }
