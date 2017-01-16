@@ -5,8 +5,8 @@ import (
 	"os/signal"
 	"sync"
 
-	config "github.com/dannyk81/prometheus_webhook_snmptrapper/config"
-	types "github.com/dannyk81/prometheus_webhook_snmptrapper/types"
+	config "github.com/i-blue/prometheus_webhook_snmptrapper/config"
+	types "github.com/i-blue/prometheus_webhook_snmptrapper/types"
 
 	logrus "github.com/Sirupsen/logrus"
 )
@@ -31,7 +31,8 @@ func init() {
 		Summary:      ".1.3.6.1.4.1.56.12.9.5.0",
 		Namespace:    ".1.3.6.1.4.1.56.12.9.6.0",
 		Application:  ".1.3.6.1.4.1.56.12.9.7.0",
-		Object:       ".1.3.6.1.4.1.56.12.9.8.0",		
+		Object:       ".1.3.6.1.4.1.56.12.9.8.0",
+                Datacenter:   ".1.3.6.1.4.1.56.12.9.9.0",
 	}
 }
 

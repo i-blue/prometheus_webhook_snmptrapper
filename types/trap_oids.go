@@ -10,4 +10,5 @@ type TrapOIDs struct {
 	Namespace    string
 	Application  string
 	Object       string
+	Datacenter   string
 }

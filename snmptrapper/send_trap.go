@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	types "github.com/dannyk81/prometheus_webhook_snmptrapper/types"
+	types "github.com/i-blue/prometheus_webhook_snmptrapper/types"
 
 	logrus "github.com/Sirupsen/logrus"
 )
@@ -70,7 +70,10 @@ func sendTrap(alert types.Alert) {
 	arguments["oidApplicationValue"] = fmt.Sprintf("'%v'", alert.Labels["alert_application"])
 	arguments["oidObject"] = trapOIDs.Object
 	arguments["oidObjectType"] = "s"
-	arguments["oidObjectValue"] = fmt.Sprintf("'%v'", alert.Labels["alert_object"])	
+	arguments["oidObjectValue"] = fmt.Sprintf("'%v'", alert.Labels["alert_object"])
+	arguments["oidDatacenter"] = trapOIDs.Datacenter
+	arguments["oidDatacenterType"] = "s"
+	arguments["oidDatacenterValue"] = fmt.Sprintf("'%v'", alert.Labels["datacenter"])        
 
 	// Trap command:
 	netSNMPTrapCommand := exec.Command(
@@ -106,8 +109,10 @@ func sendTrap(alert types.Alert) {
 		arguments["oidApplicationValue"],
 		arguments["oidObject"],
 		arguments["oidObjectType"],
-		arguments["oidObjectValue"],		
-
+		arguments["oidObjectValue"],
+                arguments["oidDatacenter"],
+                arguments["oidDatacenterType"],
+                arguments["oidDatacenterValue"],
 	)
 	netSNMPTrapCommand.Stdout = &stdout
 	netSNMPTrapCommand.Stderr = &stderr
