@@ -34,20 +34,6 @@ The traps are being send with the enterprise ID of .1.3.6.1.4.1.56.12.1.7 and th
 - ***Object***: Alert's prom_object as set in prometheus rules configuration
 - ***Datacenter***: Alerting component's location by external_label
 
-
-AlertManager configuration
---------------------------
-AlertManager needs to be configured to fire webhooks as notifications, with a pre-defined assortment of labels and annotations (these map to the SNMP MIB provided). Each alert should have the following parameters:
-
-### Annotations:
-- ***description***: A string describing the alert (_prometheusTrapperNotificationDescription_)
-
-### Labels:
-- ***instance***: A string containing a unique host-identifier / hostname / instance-id / IP-address etc (_prometheusTrapperNotificationInstance_)
-- ***severity***: A string describing the severity of the alert (_prometheusTrapperNotificationSeverity_)
-- ***location***: A string describing the location of the instance(s) / system(s) generating the alert (_prometheusTrapperNotificationLocation_)
-- ***service***: A string describing the service affected (_prometheusTrapperNotificationService_)
-
 Command-line flags
 ------------------
 - **-snmpcommunity**: The SNMP community string (_default_ = `public`)
@@ -57,9 +43,7 @@ Command-line flags
 
 
 
-=======================================
-THE FOLLOWING IS NOT IN USE 
-(legacy from chrusty/prometheus_webhook_snmptrapper):
+THE FOLLOWING IS NOT IN USE (legacy from chrusty/prometheus_webhook_snmptrapper):
 ------------------
     The provided MIB (`PROMETHEUS-TRAPPER-MIB.txt`) defines two notifications:
     - ***prometheusTrapperFiringNotification***: Notification for an alert that has occured
