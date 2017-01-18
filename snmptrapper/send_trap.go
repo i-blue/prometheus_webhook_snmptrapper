@@ -110,9 +110,9 @@ func sendTrap(alert types.Alert) {
 		arguments["oidObject"],
 		arguments["oidObjectType"],
 		arguments["oidObjectValue"],
-                arguments["oidDatacenter"],
-                arguments["oidDatacenterType"],
-                arguments["oidDatacenterValue"],
+        arguments["oidDatacenter"],
+        arguments["oidDatacenterType"],
+        arguments["oidDatacenterValue"],
 	)
 	netSNMPTrapCommand.Stdout = &stdout
 	netSNMPTrapCommand.Stderr = &stderr
