@@ -13,26 +13,26 @@ Integration with Prometheus
 
 SNMP integration
 ----------------
-The traps are being send with the enterprise ID of .1.3.6.1.4.1.56.12.1.7 and the following specific IDs that designate alerts' severity levels:
+The traps are being send with the enterprise ID of **.1.3.6.1.4.1.56.12.1.7** and the following specific IDs that designate alerts' severity levels:
 
 ### Specific IDs:
-- ***0***: normal/resolved
-- ***1***: undetermined
-- ***2***: warning
-- ***3***: minor
-- ***4***: major
-- ***5***: critical
+- **0**: normal/resolved
+- **1**: undetermined
+- **2**: warning
+- **3**: minor
+- **4**: major
+- **5**: critical
 
 ### SNMP variables (as of version 0.0.9):
-- ***Component***: An instance or a hostname
-- ***SubComponent***: -- not populated yet --
-- ***Severity***: Alert's severity as set in prometheus rules configuration
-- ***Message***: Alert's text
-- ***Summary***: Alert's short description
-- ***Namespace***: Kuberneters namespace of the alerting component
-- ***Application***: Alert's prom_application as set in prometheus rules configuration
-- ***Object***: Alert's prom_object as set in prometheus rules configuration
-- ***Datacenter***: Alerting component's location by external_label
+- **Component**: An instance or a hostname
+- **SubComponent**: -- not populated yet --
+- **Severity**: Alert's severity as set in prometheus rules configuration
+- **Message**: Alert's text
+- **Summary**: Alert's short description
+- **Namespace**: Kuberneters namespace of the alerting component
+- **Application**: Alert's prom_application as set in prometheus rules configuration
+- **Object**: Alert's prom_object as set in prometheus rules configuration
+- **Datacenter**: Alerting component's location by external_label
 
 Command-line flags
 ------------------
